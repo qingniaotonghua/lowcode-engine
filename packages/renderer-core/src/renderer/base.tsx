@@ -913,7 +913,7 @@ export default function baseRendererFactory(): IBaseRenderComponent {
       return this.__instanceMap[filedId];
     }
 
-    __debug = logger.log;
+    __debug = (...args: any[]) => { logger.log(...args); };
 
     __renderContextProvider = (customProps?: object, children?: any) => {
       return createElement(AppContext.Provider, {

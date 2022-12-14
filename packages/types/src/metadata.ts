@@ -93,7 +93,7 @@ export interface ComponentConfigure {
  */
 export interface Snippet {
   /**
-   * 组件分类title
+   * 组件分类 title
    */
   title?: string;
   /**
@@ -175,7 +175,7 @@ export interface Advanced {
   hideSelectTools?: boolean;
 
   /**
-   * 样式 及 位置，handle上必须有明确的标识以便事件路由判断，或者主动设置事件独占模式
+   * 样式 及 位置，handle 上必须有明确的标识以便事件路由判断，或者主动设置事件独占模式
    * NWSE 是交给引擎计算放置位置，ReactElement 必须自己控制初始位置
    */
   /**
@@ -222,7 +222,7 @@ export interface LiveTextEditingConfig {
    */
   selector?: string;
   /**
-   * 编辑模式 纯文本|段落编辑|文章编辑（默认纯文本，无跟随工具条）
+   * 编辑模式 纯文本 | 段落编辑 | 文章编辑（默认纯文本，无跟随工具条）
    * @default 'plaintext'
    */
   mode?: 'plaintext' | 'paragraph' | 'article';

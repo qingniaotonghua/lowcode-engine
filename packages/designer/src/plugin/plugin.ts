@@ -41,7 +41,7 @@ export class LowCodePluginRuntime implements ILowCodePluginRuntime {
     this.emitter = new EventEmitter();
     this.pluginName = pluginName;
     this.meta = meta;
-    this.logger = getLogger({ level: 'warn', bizName: `designer:plugin:${pluginName}` });
+    this.logger = getLogger({ level: 'warn', bizName: `plugin:${pluginName}` });
   }
 
   get name() {
