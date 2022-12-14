@@ -5,10 +5,9 @@ import {
   ILowCodePluginManager,
   IPluginContextOptions,
   PluginPreference,
-  isLowCodeRegisterOptions,
   ILowCodePluginContextApiAssembler,
 } from './plugin-types';
-import { filterValidOptions } from './plugin-utils';
+import { filterValidOptions, isLowCodeRegisterOptions } from './plugin-utils';
 import { LowCodePluginRuntime } from './plugin';
 // eslint-disable-next-line import/no-named-as-default
 import LowCodePluginContext from './plugin-context';
@@ -22,6 +21,9 @@ import {
 } from '@alilc/lowcode-types';
 
 const logger = getLogger({ level: 'warn', bizName: 'designer:pluginManager' });
+
+// 保留的事件前缀
+const RESERVED_EVENT_PREFIX = ['designer', 'editor', 'skeleton', 'renderer', 'render', 'utils', 'plugin', 'engine', 'editor-core', 'engine-core', 'plugins', 'event', 'events', 'log', 'logger', 'ctx', 'context'];
 
 export class LowCodePluginManager implements ILowCodePluginManager {
   private plugins: ILowCodePluginRuntime[] = [];
@@ -65,7 +67,14 @@ export class LowCodePluginManager implements ILowCodePluginManager {
     }
     let { pluginName, meta = {} } = pluginModel;
     const { preferenceDeclaration, engines } = meta;
-    const ctx = this._getLowCodePluginContext({ pluginName });
+    // filter invalid eventPrefix
+    const { eventPrefix } = meta;
+    const isReservedPrefix = RESERVED_EVENT_PREFIX.find((item) => item === eventPrefix);
+    if (isReservedPrefix) {
+      meta.eventPrefix = undefined;
+      logger.warn(`plugin ${pluginName} is trying to use ${eventPrefix} as event prefix, which is a reserved event prefix, please use another one`);
+    }
+    const ctx = this._getLowCodePluginContext({ pluginName, meta });
     const customFilterValidOptions = engineConfig.get('customPluginFilterOptions', filterValidOptions);
     const config = pluginModel(ctx, customFilterValidOptions(options, preferenceDeclaration!));
     // compat the legacy way to declare pluginName

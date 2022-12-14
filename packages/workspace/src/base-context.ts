@@ -1,3 +1,5 @@
+/* eslint-disable no-param-reassign */
+/* eslint-disable max-len */
 import { Editor, engineConfig, Setters as InnerSetters, Hotkey as InnerHotkey } from '@alilc/lowcode-editor-core';
 import {
   Designer,
@@ -25,6 +27,9 @@ import {
   Common,
   Logger,
 } from '@alilc/lowcode-shell';
+import {
+  IPluginMetaDefinition,
+} from '@alilc/lowcode-types';
 import { getLogger } from '@alilc/lowcode-utils';
 import { setterRegistry } from 'engine/src/inner-plugins/setter-registry';
 import { componentMetaParser } from 'engine/src/inner-plugins/component-meta-parser';
@@ -99,12 +104,14 @@ export class BasicContext {
     let plugins: any;
 
     const pluginContextApiAssembler: ILowCodePluginContextApiAssembler = {
-      assembleApis: (context: ILowCodePluginContextPrivate, pluginName: string) => {
+      assembleApis: (context: ILowCodePluginContextPrivate, pluginName: string, meta: IPluginMetaDefinition) => {
         context.hotkey = hotkey;
         context.project = project;
         context.skeleton = skeleton;
         context.setters = setters;
         context.material = material;
+        const eventPrefix = meta?.eventPrefix || 'common';
+        context.event = new Event(editor, { prefix: eventPrefix });
         context.event = event;
         context.config = config;
         context.common = common;

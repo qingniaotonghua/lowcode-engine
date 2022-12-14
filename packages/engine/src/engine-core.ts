@@ -1,3 +1,4 @@
+/* eslint-disable max-len */
 /* eslint-disable no-param-reassign */
 import { createElement } from 'react';
 import { render, unmountComponentAtNode } from 'react-dom';
@@ -11,7 +12,7 @@ import {
 import {
   EngineOptions,
   IPublicModelDocumentModel,
-  ILowCodePluginContext,
+  IPluginMetaDefinition,
 } from '@alilc/lowcode-types';
 import {
   Designer,
@@ -88,13 +89,15 @@ const common = new Common(editor, innerSkeleton);
 let plugins: Plugins;
 
 const pluginContextApiAssembler: ILowCodePluginContextApiAssembler = {
-  assembleApis: (context: ILowCodePluginContextPrivate, pluginName: string) => {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  assembleApis: (context: ILowCodePluginContextPrivate, pluginName: string, meta: IPluginMetaDefinition) => {
     context.hotkey = hotkey;
     context.project = project;
     context.skeleton = skeleton;
     context.setters = setters;
     context.material = material;
-    context.event = event;
+    const eventPrefix = meta?.eventPrefix || 'common';
+    context.event = new Event(editor, { prefix: eventPrefix });
     context.config = config;
     context.common = common;
     context.plugins = plugins;

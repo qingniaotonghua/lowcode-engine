@@ -14,10 +14,10 @@ import {
   IEngineConfig,
   IPublicApiLogger,
   IPublicApiPlugins,
+  ILowCodePluginPreferenceDeclaration,
 } from '@alilc/lowcode-types';
 import {
   IPluginContextOptions,
-  ILowCodePluginPreferenceDeclaration,
   ILowCodePluginContextApiAssembler,
   ILowCodePluginContextPrivate,
 } from './plugin-types';
@@ -41,8 +41,8 @@ export default class PluginContext implements ILowCodePluginContext, ILowCodePlu
       options: IPluginContextOptions,
       contextApiAssembler: ILowCodePluginContextApiAssembler,
     ) {
-    const { pluginName = 'anonymous' } = options;
-    contextApiAssembler.assembleApis(this, pluginName);
+    const { pluginName = 'anonymous', meta = {} } = options;
+    contextApiAssembler.assembleApis(this, pluginName, meta);
 
     const enhancePluginContextHook = engineConfig.get('enhancePluginContextHook');
     if (enhancePluginContextHook) {

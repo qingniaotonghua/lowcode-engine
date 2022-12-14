@@ -10,7 +10,6 @@ import {
   IPublicApiPlugins,
   ILowCodePluginConfig,
   IPublicApiLogger,
-  ILowCodeRegisterOptions,
   PreferenceValueType,
   IEngineConfig,
   IPublicModelPlugin,
@@ -54,7 +53,11 @@ export interface ILowCodePluginContextPrivate {
   set logger(plugins: IPublicApiLogger);
 }
 export interface ILowCodePluginContextApiAssembler {
-  assembleApis: (context: ILowCodePluginContextPrivate, pluginName: string) => void;
+  assembleApis(
+    context: ILowCodePluginContextPrivate,
+    pluginName: string,
+    meta: IPluginMetaDefinition,
+  ): void;
 }
 
 interface ILowCodePluginManagerPluginAccessor {
@@ -78,12 +81,9 @@ export interface ILowCodePluginManagerCore {
 
 export type ILowCodePluginManager = ILowCodePluginManagerCore & ILowCodePluginManagerPluginAccessor;
 
-export function isLowCodeRegisterOptions(opts: any): opts is ILowCodeRegisterOptions {
-  return opts && ('autoInit' in opts || 'override' in opts);
-}
-
 export interface IPluginContextOptions {
   pluginName: string;
+  meta: IPluginMetaDefinition;
 }
 
 export interface IPluginMetaDefinition {
