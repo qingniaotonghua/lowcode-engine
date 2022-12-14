@@ -178,6 +178,7 @@ export class ComponentMeta {
   private parseMetadata(metadata: ComponentMetadata) {
     const { componentName, npm, ...others } = metadata;
     let _metadata = metadata;
+    this.prototype = (metadata as any).prototype;
     if (!npm && !Object.keys(others).length) {
       // 没有注册的组件，只能删除，不支持复制、移动等操作
       _metadata = {

@@ -51,6 +51,9 @@ export function getSubComponent(library: any, paths: string[]) {
     }
     library = component;
     i++;
+    if (isReactComponent(component)) {
+      break;
+    }
   }
   return component;
 }
