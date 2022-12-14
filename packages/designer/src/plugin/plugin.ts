@@ -1,16 +1,16 @@
 import { getLogger, Logger } from '@alilc/lowcode-utils';
 import {
-  ILowCodePlugin,
+  ILowCodePluginRuntime,
   ILowCodePluginManager,
-  ILowCodePluginConfigMeta,
 } from './plugin-types';
 import {
   ILowCodePluginConfig,
+  IPluginMetaDefinition,
 } from '@alilc/lowcode-types';
 import { EventEmitter } from 'events';
 import { invariant } from '../utils';
 
-export class LowCodePlugin implements ILowCodePlugin {
+export class LowCodePluginRuntime implements ILowCodePluginRuntime {
   config: ILowCodePluginConfig;
 
   logger: Logger;
@@ -23,7 +23,7 @@ export class LowCodePlugin implements ILowCodePlugin {
 
   private pluginName: string;
 
-  private meta: ILowCodePluginConfigMeta;
+  private meta: IPluginMetaDefinition;
 
   /**
    * 标识插件状态，是否被 disabled
@@ -34,7 +34,7 @@ export class LowCodePlugin implements ILowCodePlugin {
     pluginName: string,
     manager: ILowCodePluginManager,
     config: ILowCodePluginConfig,
-    meta: ILowCodePluginConfigMeta,
+    meta: IPluginMetaDefinition,
   ) {
     this.manager = manager;
     this.config = config;
@@ -53,10 +53,11 @@ export class LowCodePlugin implements ILowCodePlugin {
       return [this.meta.dependencies];
     }
     // compat legacy way to declare dependencies
-    if (typeof this.config.dep === 'string') {
-      return [this.config.dep];
+    const legacyDepValue = (this.config as any).dep;
+    if (typeof legacyDepValue === 'string') {
+      return [legacyDepValue];
     }
-    return this.meta.dependencies || this.config.dep || [];
+    return this.meta.dependencies || legacyDepValue || [];
   }
 
   get disabled() {

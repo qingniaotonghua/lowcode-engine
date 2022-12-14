@@ -1,35 +1,32 @@
 import { engineConfig } from '@alilc/lowcode-editor-core';
 import { getLogger } from '@alilc/lowcode-utils';
 import {
-  ILowCodePlugin,
+  ILowCodePluginRuntime,
   ILowCodePluginManager,
   IPluginContextOptions,
-  ILowCodePluginConfigMeta,
   PluginPreference,
-  ILowCodePluginPreferenceDeclaration,
   isLowCodeRegisterOptions,
   ILowCodePluginContextApiAssembler,
 } from './plugin-types';
 import { filterValidOptions } from './plugin-utils';
-import { LowCodePlugin } from './plugin';
+import { LowCodePluginRuntime } from './plugin';
 // eslint-disable-next-line import/no-named-as-default
 import LowCodePluginContext from './plugin-context';
 import { invariant } from '../utils';
 import sequencify from './sequencify';
 import semverSatisfies from 'semver/functions/satisfies';
 import {
-  ILowCodePluginContext,
-  ILowCodePluginConfig,
   ILowCodeRegisterOptions,
   PreferenceValueType,
+  IPublicModelPlugin,
 } from '@alilc/lowcode-types';
 
 const logger = getLogger({ level: 'warn', bizName: 'designer:pluginManager' });
 
 export class LowCodePluginManager implements ILowCodePluginManager {
-  private plugins: ILowCodePlugin[] = [];
+  private plugins: ILowCodePluginRuntime[] = [];
 
-  pluginsMap: Map<string, ILowCodePlugin> = new Map();
+  pluginsMap: Map<string, ILowCodePluginRuntime> = new Map();
 
   private pluginPreference?: PluginPreference = new Map();
 
@@ -57,7 +54,7 @@ export class LowCodePluginManager implements ILowCodePluginManager {
    * @param registerOptions - the plugin register options
    */
   async register(
-    pluginConfigCreator: (ctx: ILowCodePluginContext, options: any) => ILowCodePluginConfig,
+    pluginModel: IPublicModelPlugin,
     options?: any,
     registerOptions?: ILowCodeRegisterOptions,
   ): Promise<void> {
@@ -66,11 +63,11 @@ export class LowCodePluginManager implements ILowCodePluginManager {
       registerOptions = options;
       options = {};
     }
-    let { pluginName, meta = {} } = pluginConfigCreator as any;
-    const { preferenceDeclaration, engines } = meta as ILowCodePluginConfigMeta;
+    let { pluginName, meta = {} } = pluginModel;
+    const { preferenceDeclaration, engines } = meta;
     const ctx = this._getLowCodePluginContext({ pluginName });
     const customFilterValidOptions = engineConfig.get('customPluginFilterOptions', filterValidOptions);
-    const config = pluginConfigCreator(ctx, customFilterValidOptions(options, preferenceDeclaration!));
+    const config = pluginModel(ctx, customFilterValidOptions(options, preferenceDeclaration!));
     // compat the legacy way to declare pluginName
     // @ts-ignore
     pluginName = pluginName || config.name;
@@ -80,7 +77,7 @@ export class LowCodePluginManager implements ILowCodePluginManager {
       config,
     );
 
-    ctx.setPreference(pluginName, (preferenceDeclaration as ILowCodePluginPreferenceDeclaration));
+    ctx.setPreference(pluginName, preferenceDeclaration);
 
     const allowOverride = registerOptions?.override === true;
 
@@ -106,7 +103,7 @@ export class LowCodePluginManager implements ILowCodePluginManager {
       throw new Error(`plugin ${pluginName} skipped, engine check failed, current engine version is ${engineConfig.get('ENGINE_VERSION')}, meta.engines.lowcodeEngine is ${engineVersionExp}`);
     }
 
-    const plugin = new LowCodePlugin(pluginName, this, config, meta);
+    const plugin = new LowCodePluginRuntime(pluginName, this, config, meta);
     // support initialization of those plugins which registered
     // after normal initialization by plugin-manager
     if (registerOptions?.autoInit) {
@@ -118,11 +115,11 @@ export class LowCodePluginManager implements ILowCodePluginManager {
     logger.log(`plugin registered with pluginName: ${pluginName}, config: ${config}, meta: ${meta}`);
   }
 
-  get(pluginName: string): ILowCodePlugin | undefined {
+  get(pluginName: string): ILowCodePluginRuntime | undefined {
     return this.pluginsMap.get(pluginName);
   }
 
-  getAll(): ILowCodePlugin[] {
+  getAll(): ILowCodePluginRuntime[] {
     return this.plugins;
   }
 
@@ -142,7 +139,7 @@ export class LowCodePluginManager implements ILowCodePluginManager {
 
   async init(pluginPreference?: PluginPreference) {
     const pluginNames: string[] = [];
-    const pluginObj: { [name: string]: ILowCodePlugin } = {};
+    const pluginObj: { [name: string]: ILowCodePluginRuntime } = {};
     this.pluginPreference = pluginPreference;
     this.plugins.forEach((plugin) => {
       pluginNames.push(plugin.name);

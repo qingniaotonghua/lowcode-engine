@@ -7,64 +7,18 @@ import {
   IPublicApiEvent,
   IPublicApiCommon,
   CompositeObject,
-  ComponentAction,
-  MetadataTransducer,
   IPublicApiPlugins,
-  ILowCodePluginContext,
   ILowCodePluginConfig,
   IPublicApiLogger,
   ILowCodeRegisterOptions,
   PreferenceValueType,
   IEngineConfig,
+  IPublicModelPlugin,
 } from '@alilc/lowcode-types';
-
-export interface ILowCodePluginPreferenceDeclarationProperty {
-  // shape like 'name' or 'group.name' or 'group.subGroup.name'
-  key: string;
-  // must have either one of description & markdownDescription
-  description: string;
-  // value in 'number', 'string', 'boolean'
-  type: string;
-  // default value
-  // NOTE! this is only used in configuration UI, won`t affect runtime
-  default?: PreferenceValueType;
-  // only works when type === 'string', default value false
-  useMultipleLineTextInput?: boolean;
-  // enum values, only works when type === 'string'
-  enum?: any[];
-  // descriptions for enum values
-  enumDescriptions?: string[];
-  // message that describing deprecation of this property
-  deprecationMessage?: string;
-}
-
-/**
- * declaration of plugin`s preference
- * when strictPluginMode === true， only declared preference can be obtained from inside plugin.
- *
- * @export
- * @interface ILowCodePluginPreferenceDeclaration
- */
-export interface ILowCodePluginPreferenceDeclaration {
-  // this will be displayed on configuration UI, can be plugin name
-  title: string;
-  properties: ILowCodePluginPreferenceDeclarationProperty[];
-}
 
 export type PluginPreference = Map<string, Record<string, PreferenceValueType>>;
 
-
-export interface ILowCodePluginConfigMetaEngineConfig {
-  lowcodeEngine?: string;
-}
-export interface ILowCodePluginConfigMeta {
-  preferenceDeclaration?: ILowCodePluginPreferenceDeclaration;
-  // 依赖插件名
-  dependencies?: string[];
-  engines?: ILowCodePluginConfigMetaEngineConfig;
-}
-
-export interface ILowCodePluginCore {
+export interface ILowCodePluginRuntimeCore {
   name: string;
   dep: string[];
   disabled: boolean;
@@ -80,17 +34,12 @@ export interface ILowCodePluginCore {
   setDisabled(flag: boolean): void;
 }
 
-interface ILowCodePluginExportsAccessor {
+interface ILowCodePluginRuntimeExportsAccessor {
   [propName: string]: any;
 }
 
-export type ILowCodePlugin = ILowCodePluginCore & ILowCodePluginExportsAccessor;
-
-export interface IDesignerCabin {
-  registerMetadataTransducer: (transducer: MetadataTransducer, level: number, id?: string) => void;
-  addBuiltinComponentAction: (action: ComponentAction) => void;
-  removeBuiltinComponentAction: (actionName: string) => void;
-}
+// eslint-disable-next-line max-len
+export type ILowCodePluginRuntime = ILowCodePluginRuntimeCore & ILowCodePluginRuntimeExportsAccessor;
 
 export interface ILowCodePluginContextPrivate {
   set hotkey(hotkey: IPublicApiHotkey);
@@ -109,18 +58,18 @@ export interface ILowCodePluginContextApiAssembler {
 }
 
 interface ILowCodePluginManagerPluginAccessor {
-  [pluginName: string]: ILowCodePlugin | any;
+  [pluginName: string]: ILowCodePluginRuntime | any;
 }
 
 export interface ILowCodePluginManagerCore {
   register(
-    pluginConfigCreator: (ctx: ILowCodePluginContext, pluginOptions?: any) => ILowCodePluginConfig,
+    pluginModel: IPublicModelPlugin,
     pluginOptions?: any,
     options?: CompositeObject,
   ): Promise<void>;
   init(pluginPreference?: Map<string, Record<string, PreferenceValueType>>): Promise<void>;
-  get(pluginName: string): ILowCodePlugin | undefined;
-  getAll(): ILowCodePlugin[];
+  get(pluginName: string): ILowCodePluginRuntime | undefined;
+  getAll(): ILowCodePluginRuntime[];
   has(pluginName: string): boolean;
   delete(pluginName: string): any;
   setDisabled(pluginName: string, flag: boolean): void;
