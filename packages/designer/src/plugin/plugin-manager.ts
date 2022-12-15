@@ -116,12 +116,11 @@ export class LowCodePluginManager implements ILowCodePluginManager {
     // support initialization of those plugins which registered
     // after normal initialization by plugin-manager
     if (registerOptions?.autoInit) {
-      // debugger
       await plugin.init();
     }
     this.plugins.push(plugin);
     this.pluginsMap.set(pluginName, plugin);
-    logger.log(`plugin registered with pluginName: ${pluginName}, config: ${config}, meta: ${meta}`);
+    logger.log(`plugin registered with pluginName: ${pluginName}, config: `, config, 'meta:', meta);
   }
 
   get(pluginName: string): ILowCodePluginRuntime | undefined {

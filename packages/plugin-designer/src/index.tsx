@@ -1,8 +1,10 @@
 import React, { PureComponent } from 'react';
-import { Editor, engineConfig, globalContext } from '@alilc/lowcode-editor-core';
+import { engineConfig } from '@alilc/lowcode-editor-core';
 import { DesignerView, Designer } from '@alilc/lowcode-designer';
-import { Asset } from '@alilc/lowcode-utils';
+import { Asset, getLogger } from '@alilc/lowcode-utils';
 import './index.scss';
+
+const logger = getLogger({ level: 'warn', bizName: 'plugin:plugin-designer' });
 
 export interface PluginProps {
   // editor?: Editor;
@@ -78,7 +80,7 @@ export default class DesignerPlugin extends PureComponent<PluginProps, DesignerP
       };
       this.setState(state);
     } catch (e) {
-      console.log(e);
+      logger.error(e);
     }
   }
 

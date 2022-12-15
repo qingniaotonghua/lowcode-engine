@@ -1,8 +1,9 @@
 import { TransformedComponentMetadata } from '@alilc/lowcode-types';
-import { isPlainObject, isJSFunction } from '@alilc/lowcode-utils';
+import { isPlainObject, isJSFunction, getLogger } from '@alilc/lowcode-utils';
 
 const leadingFnRe = /^function/;
 const leadingFnNameRe = /^\w+\s*\(/;
+const logger = getLogger({ level: 'warn', bizName: 'skeleton:transducers' });
 /**
  * 将函数字符串转成函数，支持几种类型
  *   类型一：() => {} / val => {}
@@ -24,7 +25,7 @@ function transformStringToFunction(str: string) {
       try {
         return (${str}).apply(self, arguments);
       } catch(e) {
-        console.log('call function which parsed by lowcode failed: ', e);
+        logger.warn('call function which parsed by lowcode failed: ', e);
         return e.message;
       }
     };
@@ -33,8 +34,8 @@ function transformStringToFunction(str: string) {
     // eslint-disable-next-line no-new-func
     fn = new Function(fnBody)();
   } catch (e) {
-    console.error(str);
-    console.error(e.message);
+    logger.error(str);
+    logger.error(e.message);
   }
   return fn;
 }

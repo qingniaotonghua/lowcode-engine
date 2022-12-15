@@ -1,12 +1,26 @@
+/* eslint-disable no-console */
 /* eslint-disable no-param-reassign */
+import { isPlainObject } from './is-plain-object';
+
 export type Level = 'debug' | 'log' | 'info' | 'warn' | 'error';
 interface Options {
   level: Level;
   bizName: string;
 }
 
-const levels = { debug: -1, log: 0, info: 0, warn: 1, error: 2 };
-const colors = [
+const levels: Record<string, number> = {
+  debug: -1,
+  log: 0,
+  info: 0,
+  warn: 1,
+  error: 2,
+};
+const bizNameColors = [
+  '#daa569',
+  '#00ffff',
+  '#385e0f',
+  '#7fffd4',
+  '#00c957',
   '#b0e0e6',
   '#4169e1',
   '#6a5acd',
@@ -16,11 +30,6 @@ const colors = [
   '#ff9912',
   '#eb8e55',
   '#ffe384',
-  '#daa569',
-  '#00ffff',
-  '#385e0f',
-  '#7fffd4',
-  '#00c957',
   '#40e0d0',
   '#a39480',
   '#d2691e',
@@ -42,37 +51,73 @@ const colors = [
   '#688e23',
   '#2e8b57',
 ];
-const allBizNames: Record<string, string> = {};
-const output = (logLevel: string, targetLevel: string, bizName: string, targetBizName: string) => {
+const bodyColors: Record<string, string> = {
+  debug: '#666666',
+  log: '#bbbbbb',
+  info: '#ffffff',
+  warn: '#bbbbbb',
+  error: '#bbbbbb',
+};
+const levelMarks: Record<string, string> = {
+  debug: 'debug',
+  log: 'log',
+  info: 'info',
+  warn: 'warn',
+  error: 'error',
+};
+const outputFuntion: Record<string, any> = {
+  debug: console.log,
+  log: console.log,
+  info: console.log,
+  warn: console.warn,
+  error: console.error,
+};
+
+const bizNameColorConfig: Record<string, string> = {};
+
+const shouldOutput = (
+    logLevel: string,
+    targetLevel: string = 'warn',
+    bizName: string,
+    targetBizName: string,
+  ): boolean => {
+  const isLevelFit = (levels as any)[targetLevel] <= (levels as any)[logLevel];
+  const isBizNameFit = targetBizName === '*' || bizName.indexOf(targetBizName) > -1;
+  return isLevelFit && isBizNameFit;
+};
+
+const output = (logLevel: string, bizName: string) => {
   return (...args: any[]) => {
-    const isLevelFit = targetLevel && (levels as any)[targetLevel] <= (levels as any)[logLevel];
-    const isBizNameFit = targetBizName === '*' || bizName.indexOf(targetBizName) > -1;
-    if (isLevelFit && isBizNameFit) {
-      return (console as any)[logLevel].apply(console, getLogArgs(args, bizName));
-    }
+    return outputFuntion[logLevel].apply(console, getLogArgs(args, bizName, logLevel));
   };
 };
+
 const getColor = (bizName: string) => {
-  if (!allBizNames[bizName]) {
-    allBizNames[bizName] = colors[Object.keys(allBizNames).length % colors.length];
+  if (!bizNameColorConfig[bizName]) {
+    const color = bizNameColors[Object.keys(bizNameColorConfig).length % bizNameColors.length];
+    bizNameColorConfig[bizName] = color;
   }
-  return allBizNames[bizName];
+  return bizNameColorConfig[bizName];
 };
 
-function getLogArgs(args: any, bizName: string) {
+const getLogArgs = (args: any, bizName: string, logLevel: string) => {
   const color = getColor(bizName);
+  const bodyColor = bodyColors[logLevel];
 
-  if (bizName !== '*') {
-    if (typeof args[0] === 'string') {
-      args[0] = `[${bizName}] ${args[0]}`;
+  const argsArray = args[0];
+  let prefix = `%c[${bizName}]%c[${levelMarks[logLevel]}]: `;
+  argsArray.forEach((arg: any) => {
+    if (isPlainObject(arg)) {
+      prefix += ' %o';
     } else {
-      args = [`[${bizName}]`].concat(args);
+      prefix += ' %s';
     }
-  }
-  return [`%c${args}`, `color: ${color}`];
-}
-
-function parseLogConf(logConf: string, options: Options): { level: string; bizName: string} {
+  });
+  let processedArgs = [prefix, `color: ${color}`, `color: ${bodyColor}`];
+  processedArgs = processedArgs.concat(argsArray);
+  return processedArgs;
+};
+const parseLogConf = (logConf: string, options: Options): { level: string; bizName: string} => {
   if (!logConf) {
     return {
       level: options.level,
@@ -90,7 +135,7 @@ function parseLogConf(logConf: string, options: Options): { level: string; bizNa
     level: logConf,
     bizName: '*',
   };
-}
+};
 
 const defaultOptions: Options = {
   level: 'warn',
@@ -105,30 +150,45 @@ class Logger {
   constructor(options: Options) {
     options = { ...defaultOptions, ...options };
     const _location = location || {} as any;
-    // __logConf__ 格式为 logLevel[:bizName]
-    //   1. log|warn|debug|error
-    //   2. log|warn|debug|error:*
-    //   3. log|warn|debug|error:bizName
+    // __logConf__ 格式为 logLevel[:bizName], bizName is used as: targetBizName like '%bizName%'
+    //   1. __logConf__=log  or __logConf__=warn,  etc.
+    //   2. __logConf__=log:*  or __logConf__=warn:*,  etc.
+    //   2. __logConf__=log:bizName  or __logConf__=warn:partOfBizName,  etc.
     const logConf = (((/__(?:logConf|logLevel)__=([^#/&]*)/.exec(_location.href)) || [])[1]);
     const targetOptions = parseLogConf(logConf, options);
     this.bizName = options.bizName;
     this.targetBizName = targetOptions.bizName;
     this.targetLevel = targetOptions.level;
   }
-  debug(...args: string[]): void {
-    return output('debug', this.targetLevel, this.bizName, this.targetBizName)(args);
+  debug(...args: any[]): void {
+    if (!shouldOutput('debug', this.targetLevel, this.bizName, this.targetBizName)) {
+      return;
+    }
+    return output('debug', this.bizName)(args);
   }
-  log(...args: string[]): void {
-    return output('log', this.targetLevel, this.bizName, this.targetBizName)(args);
+  log(...args: any[]): void {
+    if (!shouldOutput('log', this.targetLevel, this.bizName, this.targetBizName)) {
+      return;
+    }
+    return output('log', this.bizName)(args);
   }
-  info(...args: string[]): void {
-    return output('info', this.targetLevel, this.bizName, this.targetBizName)(args);
+  info(...args: any[]): void {
+    if (!shouldOutput('info', this.targetLevel, this.bizName, this.targetBizName)) {
+      return;
+    }
+    return output('info', this.bizName)(args);
   }
-  warn(...args: string[]): void {
-    return output('warn', this.targetLevel, this.bizName, this.targetBizName)(args);
+  warn(...args: any[]): void {
+    if (!shouldOutput('warn', this.targetLevel, this.bizName, this.targetBizName)) {
+      return;
+    }
+    return output('warn', this.bizName)(args);
   }
-  error(...args: string[]): void {
-    return output('error', this.targetLevel, this.bizName, this.targetBizName)(args);
+  error(...args: any[]): void {
+    if (!shouldOutput('error', this.targetLevel, this.bizName, this.targetBizName)) {
+      return;
+    }
+    return output('error', this.bizName)(args);
   }
 }
 
